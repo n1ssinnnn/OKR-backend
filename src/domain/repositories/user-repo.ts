@@ -1,0 +1,16 @@
+import {
+	id,
+  name,
+  firstName,
+  lastName,
+  email,
+  roleId,
+  role,
+  departmentId,
+  department,
+  positionId,
+  position,
+  createdAt,
+  updatedAt,
+  deletedAt,
+} from '@domains/entities';
