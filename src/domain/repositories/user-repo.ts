@@ -1,16 +1,5 @@
-import {
-	id,
-  name,
-  firstName,
-  lastName,
-  email,
-  roleId,
-  role,
-  departmentId,
-  department,
-  positionId,
-  position,
-  createdAt,
-  updatedAt,
-  deletedAt,
-} from '@domains/entities';
+import {User} from "./src/domain/entities/user.entity.ts";
+
+export interface UserRepository {
+	findById(id: string): Promise<User | null>;	
+}
