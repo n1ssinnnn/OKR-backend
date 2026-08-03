@@ -1,4 +1,4 @@
-import type { CheckIn } from "../entities/checkin-entity"
+import type { CheckIn } from "../entities/checkin.entity"
 
 export type CreateCheckInInput = Omit<CheckIn, "id" | "createdAt">
 

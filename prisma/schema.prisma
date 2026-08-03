@@ -1,13 +1,134 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  // url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String      @id @default(cuid())
+  name         String
+  firstName    String
+  lastName     String
+  email        String      @unique
+  password     String
+  roleId       String?
+  role         Role?       @relation(fields: [roleId], references: [id])
+  teamId       String?
+  departmentId String
+  department   Department  @relation(fields: [departmentId], references: [id])
+  positionId   String
+  position     Position    @relation(fields: [positionId], references: [id])
+  checkIns     CheckIn[]
+  objectives   Objective[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime?   @updatedAt
+  deletedAt    DateTime?
+}
+
+model Role {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  users     User[]
+  createdAt DateTime @default(now())
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  users     User[]
+  createdAt DateTime @default(now())
+}
+
+model Position {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  users     User[]
+  createdAt DateTime @default(now())
+}
+
+model Cycle {
+  id         String      @id @default(cuid())
+  name       String
+  startDate  DateTime
+  endDate    DateTime
+  status     CycleStatus @default(DRAFT)
+  objectives Objective[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model Objective {
+  id                String      @id @default(cuid())
+  cycleId           String
+  cycle             Cycle       @relation(fields: [cycleId], references: [id])
+  ownerId           String
+  ownerType         OwnerType
+  parentObjectiveId String?
+  parent            Objective?  @relation(name: "ObjectiveTree", fields: [parentObjectiveId], references: [id])
+  children          Objective[] @relation(name: "ObjectiveTree")
+  title             String
+  description       String?
+  status            OKRStatus   @default(ON_TRACK)
+  progress          Float       @default(0)
+  keyResults        KeyResult[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  user              User?       @relation(fields: [userId], references: [id])
+  userId            String?
+}
+
+model KeyResult {
+  id           String    @id @default(cuid())
+  objectiveId  String
+  objective    Objective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  title        String
+  type         KRType    @default(NUMBER)
+  startValue   Float     @default(0)
+  targetValue  Float
+  currentValue Float     @default(0)
+  progress     Float     @default(0)
+  checkIns     CheckIn[]
+  updatedAt    DateTime  @updatedAt
+}
+
+model CheckIn {
+  id            String    @id @default(cuid())
+  keyResultId   String
+  keyResult     KeyResult @relation(fields: [keyResultId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  previousValue Float
+  newValue      Float
+  note          String?
+  createdAt     DateTime  @default(now())
+}
+
+enum CycleStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+enum OKRStatus {
+  ON_TRACK
+  AT_RISK
+  OFF_TRACK
+  COMPLETED
+}
+
+enum OwnerType {
+  USER
+  TEAM
+  COMPANY
+}
+
+enum KRType {
+  NUMBER
+  PERCENTAGE
+  BOOLEAN
+  MILESTONE
 }
