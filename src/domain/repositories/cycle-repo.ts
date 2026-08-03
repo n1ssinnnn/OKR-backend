@@ -1,4 +1,4 @@
-import type { Cycle } from "../entities/okr-cycle-entity"
+import type { Cycle } from "../entities/cycle-entity"
 
 export type CreateCycleInput = Omit<Cycle, "id" | "createdAt" | "updatedAt">
 

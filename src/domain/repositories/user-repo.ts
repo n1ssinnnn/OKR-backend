@@ -1,5 +1,5 @@
 import {
-	id,
+  id,
   name,
   firstName,
   lastName,
