@@ -1,25 +1,42 @@
-export type OKRStatus = "ON_TRACK" | "AT_RISK" | "OFF_TRACK" | "COMPLETE"
-export type OwnerType = "TEAM" | "COMPANY"
+import type { Cycle } from "./cycle.entity"
+import type { KeyResult } from "./key-result.entity"
+
+export enum OwnerType {
+    USER = "USER",
+    TEAM = "TEAM",
+    COMPANY = "COMPANY",
+}
+
+export enum OKRStatus {
+    ON_TRACK = "ON_TRACK",
+    AT_RISK = "AT_RISK",
+    OFF_TRACK = "OFF_TRACK",
+    COMPLETED = "COMPLETED",
+}
 
 export interface Objective {
     id: string
     cycleId: string
+    cycle: Cycle
     ownerId: string
     ownerType: OwnerType
     parentObjectiveId?: string | null
+    parent?: Objective | null
+    children?: Objective[]
     title: string
     description?: string | null
     status: OKRStatus
     progress: number
-    createDate: Date
-    updateDate: Date
+    keyResults?: KeyResult[]
+    createdAt: Date
+    updatedAt: Date
 }
 
 export const deriveStatus = (progress: number): OKRStatus => {
-    if (progress >= 100) return "COMPLETE"
-    if (progress >= 70) return "ON_TRACK"
-    if (progress >= 40) return "AT_RISK"
-    return "OFF_TRACK"
+    if (progress >= 100) return OKRStatus.COMPLETED
+    if (progress >= 70) return OKRStatus.ON_TRACK
+    if (progress >= 40) return OKRStatus.AT_RISK
+    return OKRStatus.OFF_TRACK
 }
 
 export const calculateObjectiveProgress = (krProgresses: number[]): number => {

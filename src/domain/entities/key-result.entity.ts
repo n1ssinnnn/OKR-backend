@@ -1,14 +1,24 @@
-export type KRType = "NUMBER" | "PERCENTAGE" | "BOOLEAN" | "CURRENCY"
+import type { Objective } from "./objective.entity"
+import type { CheckIn } from "./checkin.entity"
+
+export enum KRType {
+    NUMBER = "NUMBER",
+    PERCENTAGE = "PERCENTAGE",
+    BOOLEAN = "BOOLEAN",
+    MILESTONE = "MILESTONE",
+}
 
 export interface KeyResult {
     id: string
     objectiveId: string
+    objective: Objective
     title: string
     type: KRType
     startValue: number
     targetValue: number
     currentValue: number
     progress: number
+    checkIns?: CheckIn[]
     updatedAt: Date
 }
 
