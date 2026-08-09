@@ -1,10 +1,11 @@
+import type { Prisma } from "@prisma/client"
 import type { CheckIn } from "../entities/checkin.entity"
 
-export type CreateCheckInInput = Omit<CheckIn, "id" | "createdAt">
+export type CreateCheckInInput = Prisma.CheckInUncheckedCreateInput
 
 export interface CheckInRepository {
     findById(id: string): Promise<CheckIn | null>
-    findByKeyResult(keyResultId: string): Promise<CheckIn[]>  // ดู history ของ KR
-    findByUser(userId: string): Promise<CheckIn[]>            // ดูว่า user คนนี้ checkin อะไรบ้าง
+    findByKeyResult(keyResultId: string): Promise<CheckIn[]>
+    findByUser(userId: string): Promise<CheckIn[]>
     create(data: CreateCheckInInput): Promise<CheckIn>
 }

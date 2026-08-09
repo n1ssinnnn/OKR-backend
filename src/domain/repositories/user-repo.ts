@@ -1,6 +1,8 @@
+import type { Prisma } from "@prisma/client"
 import type { User } from "../entities/user.entity"
 
-export type CreateUserInput = Omit<User, "createdAt" | "updatedAt" | "deletedAt">
+export type CreateUserInput = Prisma.UserUncheckedCreateInput
+export type UpdateUserInput = Prisma.UserUncheckedUpdateInput
 
 export type BulkCreateResult = {
 	success: CreateUserInput[]
@@ -9,10 +11,9 @@ export type BulkCreateResult = {
 
 export interface UserRepository {
 	findById(id: string): Promise<User | null>
-	findByEmail(email: string): Promise<User | null>  // สำคัญ — ใช้ตอน login
-	findByTeam(teamId: string): Promise<User[]>
+	findByEmail(email: string): Promise<User | null>
 	create(data: CreateUserInput): Promise<User>
 	bulkCreate(data: CreateUserInput[]): Promise<BulkCreateResult>
-	update(id: string, data: Partial<User>): Promise<User>
+	update(id: string, data: UpdateUserInput): Promise<User>
 	delete(id: string): Promise<void>
 }
