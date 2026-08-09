@@ -1,45 +1,19 @@
-import {User} from "./src/domain/entities/user.entity.ts";
+import type { Prisma } from "@prisma/client"
+import type { User } from "../entities/user.entity"
 
-export interface UserRepository {
-	findById(id: string): Promise<User | null>;
+export type CreateUserInput = Prisma.UserUncheckedCreateInput
+export type UpdateUserInput = Prisma.UserUncheckedUpdateInput
+
+export type BulkCreateResult = {
+	success: CreateUserInput[]
+	failed: { row: number; email: string; reason: string }[]
 }
 
-export class UserMapper {
-	static toDomain(raw: any): User {
-		return new User(
-			raw.id,
-			raw.name,
-      		raw.firstName,
-      		raw.lastName,
-			raw.email,
-			raw.roleId,
-			raw.role,
-			raw.departmentId,
-			raw.department,
-			raw.positionId,
-			raw.position,
-			raw.createdAt,
-			raw.updatedAt,
-			raw.deletedAt
-		);
-	}
-
-	static toPersistence(user: User): any {
-		return {
-			user_id: user.id,
-			user_name: user.name,
-      		first_name: user.firstName,
-      		last_name: user.lastName,
-			user_email: user.email,
-			user_roleId: user.roleId,
-			user_role: user.role,
-			user_depId: user.departmentId,
-			user_dep: user.department,
-			user_posId: user.positionId,
-			user_pos: user.position,
-			user_create: user.createdAt,
-			user_update: user.updatedAt,
-			user_delete: user.deletedAt
-		};
-	}
+export interface UserRepository {
+	findById(id: string): Promise<User | null>
+	findByEmail(email: string): Promise<User | null>
+	create(data: CreateUserInput): Promise<User>
+	bulkCreate(data: CreateUserInput[]): Promise<BulkCreateResult>
+	update(id: string, data: UpdateUserInput): Promise<User>
+	delete(id: string): Promise<void>
 }
