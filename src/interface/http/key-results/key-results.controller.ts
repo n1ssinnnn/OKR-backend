@@ -12,16 +12,18 @@ export const createKeyResultsController = (
             try {
                 return await createKeyResult.execute({
                     ...body,
-                    currentValue: body.startValue,  // currentValue เริ่มต้นที่ startValue
+                    currentValue: body.startValue,
                 })
             } catch (e: any) {
                 return status(400, { message: e.message })
             }
-        }, { body: CreateKeyResultDTO })
+        }, {
+            body: CreateKeyResultDTO,
+            detail: { tags: ["Key Results"], summary: "สร้าง key result ใหม่" },
+        })
 
         .post("/:id/checkin", async ({ params, body, status, request }) => {
             try {
-                // userId จะได้มาจาก auth middleware ใน step ถัดไป
                 const userId = request.headers.get("x-user-id") ?? ""
                 return await submitCheckIn.execute({
                     keyResultId: params.id,
@@ -31,4 +33,7 @@ export const createKeyResultsController = (
             } catch (e: any) {
                 return status(400, { message: e.message })
             }
-        }, { body: CheckInDTO })
+        }, {
+            body: CheckInDTO,
+            detail: { tags: ["Key Results"], summary: "Check-in Key Result" },
+        })
