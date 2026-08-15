@@ -14,6 +14,8 @@ export const createUsersController = (
             } catch (e: any) {
                 return status(404, { message: e.message })
             }
+        }, {
+            detail: { tags: ["Users"], summary: "ดึง user by ID" },
         })
 
         .post("/bulk-import", async ({ body, status }) => {
@@ -23,4 +25,7 @@ export const createUsersController = (
             } catch (e: any) {
                 return status(400, { message: e.message })
             }
-        }, { body: BulkImportDTO })
+        }, {
+            body: BulkImportDTO,
+            detail: { tags: ["Users"], summary: "Import users จากไฟล์ Excel" },
+        })
