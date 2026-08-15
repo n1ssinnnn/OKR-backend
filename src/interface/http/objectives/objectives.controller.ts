@@ -1,5 +1,4 @@
-import Elysia from "elysia"
-import { t } from "elysia"
+import Elysia, { t } from "elysia"
 import { CreateObjectiveDTO } from "./objectives.dto"
 import type { CreateObjectiveUseCase } from "../../../application/use-cases/objectives/create-objective.usecase"
 import type { GetObjectivesUseCase } from "../../../application/use-cases/objectives/get-objectives.usecase"
@@ -17,6 +16,7 @@ export const createObjectivesController = (
             }
         }, {
             query: t.Object({ cycleId: t.String() }),
+            detail: { tags: ["Objectives"], summary: "ดึง objectives ใน cycle" },
         })
 
         .get("/:id", async ({ params, status }) => {
@@ -25,6 +25,8 @@ export const createObjectivesController = (
             } catch (e: any) {
                 return status(404, { message: e.message })
             }
+        }, {
+            detail: { tags: ["Objectives"], summary: "ดึง objective by ID พร้อม Key Results" },
         })
 
         .post("/", async ({ body, status }) => {
@@ -33,4 +35,7 @@ export const createObjectivesController = (
             } catch (e: any) {
                 return status(400, { message: e.message })
             }
-        }, { body: CreateObjectiveDTO })
+        }, {
+            body: CreateObjectiveDTO,
+            detail: { tags: ["Objectives"], summary: "สร้าง objective ใหม่" },
+        })
