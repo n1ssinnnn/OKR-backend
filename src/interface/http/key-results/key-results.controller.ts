@@ -7,7 +7,10 @@ export const createKeyResultsController = (
     createKeyResult: CreateKeyResultUseCase,
     submitCheckIn: SubmitCheckInUseCase,
 ) =>
-    new Elysia({ prefix: "/key-results" })
+    new Elysia({
+        prefix: "/key-results",
+        tags: ["Key Results"]
+    })
         .post("/", async ({ body, status }) => {
             try {
                 return await createKeyResult.execute({
@@ -18,8 +21,7 @@ export const createKeyResultsController = (
                 return status(400, { message: e.message })
             }
         }, {
-            body: CreateKeyResultDTO,
-            detail: { tags: ["Key Results"], summary: "สร้าง key result ใหม่" },
+            body: CreateKeyResultDTO
         })
 
         .post("/:id/checkin", async ({ params, body, status, request }) => {
@@ -35,5 +37,4 @@ export const createKeyResultsController = (
             }
         }, {
             body: CheckInDTO,
-            detail: { tags: ["Key Results"], summary: "Check-in Key Result" },
         })
