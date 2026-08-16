@@ -7,16 +7,18 @@ export const createUsersController = (
     getUsers: GetUsersUseCase,
     bulkImport: BulkImportUsersUseCase,
 ) =>
-    new Elysia({ prefix: "/users" })
+    new Elysia({
+        prefix: "/users",
+        detail: { tags: ['Users'] },
+    })
         .get("/:id", async ({ params, status }) => {
             try {
                 return await getUsers.executeById(params.id)
             } catch (e: any) {
                 return status(404, { message: e.message })
             }
-        }, {
-            detail: { tags: ["Users"], summary: "ดึง user by ID" },
-        })
+        }
+        )
 
         .post("/bulk-import", async ({ body, status }) => {
             try {
@@ -27,5 +29,5 @@ export const createUsersController = (
             }
         }, {
             body: BulkImportDTO,
-            detail: { tags: ["Users"], summary: "Import users จากไฟล์ Excel" },
-        })
+        }
+        )
