@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client"
 import type { UserRepository, CreateUserInput, BulkCreateResult, UpdateUserInput } from "../../../domain/repositories/user-repo"
 import type { User } from "../../../domain/entities/user.entity"
+import { password } from "bun"
 
 export class PrismaUserRepository implements UserRepository {
     constructor(private readonly prisma: PrismaClient) { }
@@ -47,9 +48,15 @@ export class PrismaUserRepository implements UserRepository {
         if (success.length > 0) {
             await this.prisma.user.createMany({
                 data: success.map(u => ({
-                    ...u,
+                    id: u.id,
                     name: `${u.firstName} ${u.lastName}`,
-                    password: "changeme123",
+                    firstName: u.firstName,
+                    lastName: u.lastName,
+                    email: u.email,
+                    password: u.password,
+                    roleId: u.roleId ?? null,
+                    departmentId: u.departmentId,
+                    positionId: u.positionId
                 })),
                 skipDuplicates: true,
             })
