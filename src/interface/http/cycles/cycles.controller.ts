@@ -7,17 +7,16 @@ export const createCyclesController = (
     createCycle: CreateCycleUseCase,
     getCycles: GetCyclesUseCase,
 ) =>
-    new Elysia({ prefix: "/cycles" })
-        .get("/", () => getCycles.execute(), {
-            detail: { tags: ["Cycles"], summary: "ดึง cycles ทั้งหมด" },
-        })
+    new Elysia({
+        prefix: "/cycles",
+        tags: ["Cycles"]
+    })
+        .get("/", () => getCycles.execute())
 
         .get("/active", async ({ status }) => {
             const cycle = await getCycles.executeGetActive()
             if (!cycle) return status(404, { message: "No active cycle found" })
             return cycle
-        }, {
-            detail: { tags: ["Cycles"], summary: "ดึง active cycle" },
         })
 
         .post("/", async ({ body, status }) => {
@@ -32,6 +31,5 @@ export const createCyclesController = (
                 return status(400, { message: e.message })
             }
         }, {
-            body: CreateCycleDTO,
-            detail: { tags: ["Cycles"], summary: "สร้าง cycle ใหม่" },
+            body: CreateCycleDTO
         })
