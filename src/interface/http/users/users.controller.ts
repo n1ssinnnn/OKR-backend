@@ -1,4 +1,4 @@
-import Elysia from "elysia"
+import Elysia, { status } from "elysia"
 import { BulkImportDTO } from "./users.dto"
 import type { GetUsersUseCase } from "../../../application/use-cases/users/get-users.usecase"
 import type { BulkImportUsersUseCase } from "../../../application/use-cases/users/bulk-import-users.usecase"
@@ -11,6 +11,8 @@ export const createUsersController = (
         prefix: "/users",
         detail: { tags: ['Users'] },
     })
+        .get("/", () => getUsers.execute())
+
         .get("/:id", async ({ params, status }) => {
             try {
                 return await getUsers.executeById(params.id)

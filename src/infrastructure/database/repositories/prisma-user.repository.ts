@@ -1,21 +1,20 @@
 import type { PrismaClient } from "@prisma/client"
 import type { UserRepository, CreateUserInput, BulkCreateResult, UpdateUserInput } from "../../../domain/repositories/user-repo"
 import type { User } from "../../../domain/entities/user.entity"
-import { password } from "bun"
 
 export class PrismaUserRepository implements UserRepository {
     constructor(private readonly prisma: PrismaClient) { }
 
+    async findAll(): Promise<User[]> {
+        return this.prisma.user.findMany({
+            orderBy: { createdAt: "desc" },
+            include: { role: true, department: true, position: true },
+        }) as Promise<User[]>
+    }
+
     async findById(id: string): Promise<User | null> {
         return this.prisma.user.findUnique({
             where: { id },
-            include: { role: true, department: true, position: true },
-        }) as Promise<User | null>
-    }
-
-    async findByEmail(email: string): Promise<User | null> {
-        return this.prisma.user.findUnique({
-            where: { email },
             include: { role: true, department: true, position: true },
         }) as Promise<User | null>
     }

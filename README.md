@@ -57,7 +57,15 @@ bunx prisma migrate dev --name init
 bunx prisma generate
 ```
 
-### 4. รัน Server
+### 4. Seed ข้อมูลเริ่มต้น
+
+```bash
+bunx prisma db seed
+```
+
+> สร้าง Roles และ Departments เริ่มต้นที่จำเป็นสำหรับการ import users
+
+### 5. รัน Server
 
 ```bash
 bun --watch src/index.ts
@@ -93,6 +101,9 @@ bunx prisma generate
 
 # ดึง schema จาก database มาอัปเดต (กรณีแก้ DB โดยตรง)
 bunx prisma db pull
+
+# Seed ข้อมูลเริ่มต้น (Roles, Departments)
+bunx prisma db seed
 
 # Reset database (ลบข้อมูลทั้งหมดแล้ว migrate ใหม่)
 bunx prisma migrate reset
