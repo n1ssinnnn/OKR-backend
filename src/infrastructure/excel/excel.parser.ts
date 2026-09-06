@@ -2,14 +2,12 @@ import * as XLSX from "xlsx"
 
 // shape ที่คาดหวังจาก Excel
 export interface ExcelUserRow {
-    id: string
     firstName: string
     lastName: string
     email: string
     password: string
     departmentId: string
-    positionId: string
-    roleId?: string
+    roleId: string
 }
 
 const normalizeCell = (value: unknown): string => {
@@ -38,22 +36,19 @@ export const parseUserExcel = (buffer: Buffer): {
         const rowNum = index + 2  // +2 เพราะ row 1 คือ header
 
         // Validate required fields
-        const id = normalizeCell(r["id"])
         const firstName = normalizeCell(r["firstName"])
         const lastName = normalizeCell(r["lastName"])
         const email = normalizeCell(r["email"])
         const password = normalizeCell(r["password"])
         const departmentId = normalizeCell(r["departmentId"])
-        const positionId = normalizeCell(r["positionId"])
-        const roleId = normalizeCell(r["roleId"]) || undefined
+        const roleId = normalizeCell(r["roleId"])
 
-        if (!id) return errors.push({ row: rowNum, reason: "id is required" })
         if (!firstName) return errors.push({ row: rowNum, reason: "firstName is required" })
         if (!lastName) return errors.push({ row: rowNum, reason: "lastName is required" })
         if (!email) return errors.push({ row: rowNum, reason: "email is required" })
         if (!password) return errors.push({ row: rowNum, reason: "password is required" })
+        if (!roleId) return errors.push({ row: rowNum, reason: "roleId is required" })
         if (!departmentId) return errors.push({ row: rowNum, reason: "departmentId is required" })
-        if (!positionId) return errors.push({ row: rowNum, reason: "positionId is required" })
 
 
         // Validate email format
@@ -63,13 +58,11 @@ export const parseUserExcel = (buffer: Buffer): {
         }
 
         rows.push({
-            id,
             firstName,
             lastName,
             email,
             password,
             departmentId,
-            positionId,
             roleId,
         })
     })

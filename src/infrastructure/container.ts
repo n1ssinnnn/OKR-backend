@@ -15,6 +15,7 @@ import { GetObjectivesUseCase } from "../application/use-cases/objectives/get-ob
 import { CreateKeyResultUseCase } from "../application/use-cases/key-results/create-keyresult.usecase"
 import { SubmitCheckInUseCase } from "../application/use-cases/checkins/submit-checkin.usecase"
 import { GetUsersUseCase } from "../application/use-cases/users/get-users.usecase"
+import { CreateUserUseCase } from "../application/use-cases/users/create-user.usecase"
 import { BulkImportUsersUseCase } from "../application/use-cases/users/bulk-import-users.usecase"
 
 // --- Repositories (Layer 4) ---
@@ -41,6 +42,7 @@ export const container = {
     submitCheckIn: new SubmitCheckInUseCase(checkInRepo, keyResultRepo, objectiveRepo),
 
     // Users
+    createUser: new CreateUserUseCase(userRepo),
     getUsers: new GetUsersUseCase(userRepo),
     bulkImport: new BulkImportUsersUseCase(userRepo),
 }
