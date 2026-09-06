@@ -10,5 +10,4 @@ export const CreateObjectiveDTO = t.Object({
         t.Literal("TEAM"),
         t.Literal("COMPANY"),
     ]),
-    parentObjectiveId: t.Optional(t.String()),
 })

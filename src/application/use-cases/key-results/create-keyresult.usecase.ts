@@ -11,7 +11,8 @@ export class CreateKeyResultUseCase {
     async execute(input: CreateKeyResultInput): Promise<KeyResult> {
         // Validate
         if (!input.title.trim()) throw new Error("Key Result title is required")
-        if (input.targetValue <= input.startValue) throw new Error("targetValue must be greater than startValue")
+        const startValue = input.startValue ?? 0
+        if (input.targetValue <= startValue) throw new Error("targetValue must be greater than startValue")
 
         // เช็คว่า objective มีอยู่จริง
         const objective = await this.objectiveRepo.findById(input.objectiveId)

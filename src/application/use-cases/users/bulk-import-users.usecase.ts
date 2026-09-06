@@ -23,7 +23,7 @@ export class BulkImportUsersUseCase {
                 firstName: r.firstName,
                 lastName: r.lastName,
                 email: r.email,
-                password: "1234",
+                password: r.password,
                 roleId: r.roleId,
                 departmentId: r.departmentId,
             }))

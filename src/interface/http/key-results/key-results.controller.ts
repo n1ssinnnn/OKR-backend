@@ -1,16 +1,28 @@
-import Elysia from "elysia"
+import Elysia, { t } from "elysia"
 import { CreateKeyResultDTO, CheckInDTO } from "./key-results.dto"
 import type { CreateKeyResultUseCase } from "../../../application/use-cases/key-results/create-keyresult.usecase"
+import type { GetKeyResultsUseCase } from "../../../application/use-cases/key-results/get-keyResults.usecase"
 import type { SubmitCheckInUseCase } from "../../../application/use-cases/checkins/submit-checkin.usecase"
 
 export const createKeyResultsController = (
     createKeyResult: CreateKeyResultUseCase,
+    getKeyResults: GetKeyResultsUseCase,
     submitCheckIn: SubmitCheckInUseCase,
 ) =>
     new Elysia({
         prefix: "/key-results",
         tags: ["Key Results"]
     })
+        .get("/", async ({ query, status }) => {
+            try {
+                return await getKeyResults.executeByObjective(query.objectiveId)
+            } catch (e: any) {
+                return status(400, { message: e.message })
+            }
+        }, {
+            query: t.Object({ objectiveId: t.String() }),
+        })
+
         .post("/", async ({ body, status }) => {
             try {
                 return await createKeyResult.execute({
