@@ -36,5 +36,5 @@ export const createServer = () =>
                 .use(createCyclesController(container.createCycle, container.getCycles))
                 .use(createObjectivesController(container.createObjective, container.getObjectives))
                 .use(createKeyResultsController(container.createKeyResult, container.submitCheckIn))
-                .use(createUsersController(container.getUsers, container.bulkImport))
+                .use(createUsersController(container.createUser, container.getUsers, container.bulkImport))
         )

@@ -2,28 +2,74 @@ import type { PrismaClient } from "@prisma/client"
 import type { UserRepository, CreateUserInput, BulkCreateResult, UpdateUserInput } from "../../../domain/repositories/user-repo"
 import type { User } from "../../../domain/entities/user.entity"
 
+type UserRow = {
+    id: string
+    name: string
+    firstName: string
+    lastName: string
+    email: string
+    password: string
+    roleId: string
+    role: { id: string; name: string }
+    departmentId: string
+    department: { id: string; name: string }
+    createdAt: Date
+    updatedAt: Date | null
+    deletedAt: Date | null
+}
+
 export class PrismaUserRepository implements UserRepository {
     constructor(private readonly prisma: PrismaClient) { }
 
+    private mapToEntity(row: UserRow): User {
+        return {
+            id: row.id,
+            name: row.name,
+            firstName: row.firstName,
+            lastName: row.lastName,
+            email: row.email,
+            password: row.password,
+            roleId: row.roleId,
+            role: row.role.name,
+            departmentId: row.departmentId,
+            department: row.department.name,          // แค่ชื่อ department
+            createdAt: row.createdAt,
+            updatedAt: row.updatedAt,
+            deletedAt: row.deletedAt,
+        }
+    }
+
+    private get include() {
+        return {
+            role: true,
+            department: true,
+        } as const
+    }
+
     async findAll(): Promise<User[]> {
-        return this.prisma.user.findMany({
+        const rows = await this.prisma.user.findMany({
+            where: { deletedAt: null },
+            include: this.include,
             orderBy: { createdAt: "desc" },
-            include: { role: true, department: true, position: true },
-        }) as Promise<User[]>
+        })
+        return rows.map(row => this.mapToEntity(row as UserRow))
     }
 
     async findById(id: string): Promise<User | null> {
-        return this.prisma.user.findUnique({
-            where: { id },
-            include: { role: true, department: true, position: true },
-        }) as Promise<User | null>
+        const row = await this.prisma.user.findFirst({
+            where: { id, deletedAt: null },
+            include: this.include,
+        })
+        if (!row) return null
+        return this.mapToEntity(row as UserRow)
     }
 
     async create(data: CreateUserInput): Promise<User> {
-        return this.prisma.user.create({
+        const row = await this.prisma.user.create({
             data,
-            include: { role: true, department: true, position: true },
-        }) as Promise<User>
+            include: this.include,
+        })
+        return this.mapToEntity(row as UserRow)
     }
 
     async bulkCreate(data: CreateUserInput[]): Promise<BulkCreateResult> {
@@ -47,15 +93,13 @@ export class PrismaUserRepository implements UserRepository {
         if (success.length > 0) {
             await this.prisma.user.createMany({
                 data: success.map(u => ({
-                    id: u.id,
                     name: `${u.firstName} ${u.lastName}`,
                     firstName: u.firstName,
                     lastName: u.lastName,
                     email: u.email,
                     password: u.password,
-                    roleId: u.roleId ?? null,
+                    roleId: u.roleId,
                     departmentId: u.departmentId,
-                    positionId: u.positionId
                 })),
                 skipDuplicates: true,
             })
@@ -65,14 +109,19 @@ export class PrismaUserRepository implements UserRepository {
     }
 
     async update(id: string, data: UpdateUserInput): Promise<User> {
-        return this.prisma.user.update({
+        const row = await this.prisma.user.update({
             where: { id },
             data,
-            include: { role: true, department: true, position: true },
-        }) as Promise<User>
+            include: this.include,
+        })
+        return this.mapToEntity(row as UserRow)
     }
 
     async delete(id: string): Promise<void> {
-        await this.prisma.user.delete({ where: { id } })
+        // soft delete — ไม่ลบจริง แค่ set deletedAt
+        await this.prisma.user.update({
+            where: { id },
+            data: { deletedAt: new Date() },
+        })
     }
 }

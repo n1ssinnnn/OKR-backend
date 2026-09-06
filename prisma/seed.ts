@@ -27,17 +27,6 @@ async function main() {
         skipDuplicates: true,
     })
 
-    await prisma.position.createMany({
-        data: [
-            { id: "post_01", name: "Software Engineer" },
-            { id: "post_02", name: "Product Manager" },
-            { id: "post_03", name: "Designer" },
-            { id: "post_04", name: "Marketing Manager" },
-            { id: "post_05", name: "HR Manager" },
-        ],
-        skipDuplicates: true,
-    })
-
     console.log("✅ Seed เสร็จแล้ว")
 }
 
