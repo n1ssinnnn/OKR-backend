@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client"
+import type { Department, PrismaClient, Role } from "@prisma/client"
 import type { UserRepository, CreateUserInput, BulkCreateResult, UpdateUserInput } from "../../../domain/repositories/user-repo"
 import type { User } from "../../../domain/entities/user.entity"
 
@@ -10,9 +10,9 @@ type UserRow = {
     email: string
     password: string
     roleId: string
-    role: { id: string; name: string }
+    role: Role
     departmentId: string
-    department: { id: string; name: string }
+    department: Department
     createdAt: Date
     updatedAt: Date | null
     deletedAt: Date | null
@@ -30,9 +30,9 @@ export class PrismaUserRepository implements UserRepository {
             email: row.email,
             password: row.password,
             roleId: row.roleId,
-            role: row.role.name,
+            role: row.role,
             departmentId: row.departmentId,
-            department: row.department.name,          // แค่ชื่อ department
+            department: row.department,
             createdAt: row.createdAt,
             updatedAt: row.updatedAt,
             deletedAt: row.deletedAt,

@@ -18,13 +18,6 @@ export class CreateObjectiveUseCase {
         if (!cycle) throw new Error("Cycle not found")
         if (!isCycleActive(cycle)) throw new Error("Cannot create objective in an inactive cycle")
 
-        // เช็ค parent ถ้ามี
-        if (input.parentObjectiveId) {
-            const parent = await this.objectiveRepo.findById(input.parentObjectiveId)
-            if (!parent) throw new Error("Parent objective not found")
-            if (parent.cycleId !== input.cycleId) throw new Error("Parent must be in the same cycle")
-        }
-
         return this.objectiveRepo.create(input)
     }
 }

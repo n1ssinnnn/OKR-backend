@@ -1,5 +1,7 @@
 import type { CheckIn } from "./checkin.entity";
 import type { Objective } from "./objective.entity";
+import type { Department } from "./department.entity";
+import type { Role } from "./role.entity";
 
 export interface User {
     id: string;
@@ -9,10 +11,10 @@ export interface User {
     email: string;
     password: string;
     roleId: string;
-    role: string;
+    role: Role;
     teamId?: string | null
     departmentId: string;
-    department: string;
+    department: Department;
     checkIns?: CheckIn[];
     objectives?: Objective[];
     createdAt: Date;

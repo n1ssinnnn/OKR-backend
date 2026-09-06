@@ -1,5 +1,5 @@
-import type { Objective } from "./objective.entity"
 import type { CheckIn } from "./checkin.entity"
+import type { Objective } from "./objective.entity"
 
 export enum KRType {
     NUMBER = "NUMBER",

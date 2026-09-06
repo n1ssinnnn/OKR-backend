@@ -13,6 +13,7 @@ import { GetCyclesUseCase } from "../application/use-cases/cycles/get-cycles.use
 import { CreateObjectiveUseCase } from "../application/use-cases/objectives/create-objective.usecase"
 import { GetObjectivesUseCase } from "../application/use-cases/objectives/get-objectives.usecase"
 import { CreateKeyResultUseCase } from "../application/use-cases/key-results/create-keyresult.usecase"
+import { GetKeyResultsUseCase } from "../application/use-cases/key-results/get-keyResults.usecase"
 import { SubmitCheckInUseCase } from "../application/use-cases/checkins/submit-checkin.usecase"
 import { GetUsersUseCase } from "../application/use-cases/users/get-users.usecase"
 import { CreateUserUseCase } from "../application/use-cases/users/create-user.usecase"
@@ -37,6 +38,7 @@ export const container = {
 
     // Key Results
     createKeyResult: new CreateKeyResultUseCase(keyResultRepo, objectiveRepo),
+    getKeyResults: new GetKeyResultsUseCase(keyResultRepo),
 
     // Check-ins
     submitCheckIn: new SubmitCheckInUseCase(checkInRepo, keyResultRepo, objectiveRepo),

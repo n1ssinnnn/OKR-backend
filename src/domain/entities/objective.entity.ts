@@ -20,9 +20,6 @@ export interface Objective {
     cycle: Cycle
     ownerId: string
     ownerType: OwnerType
-    parentObjectiveId?: string | null
-    parent?: Objective | null
-    children?: Objective[]
     title: string
     description?: string | null
     status: OKRStatus
