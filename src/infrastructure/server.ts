@@ -7,6 +7,8 @@ import { createCyclesController } from "../interface/http/cycles/cycles.controll
 import { createObjectivesController } from "../interface/http/objectives/objectives.controller"
 import { createKeyResultsController } from "../interface/http/key-results/key-results.controller"
 import { createUsersController } from "../interface/http/users/users.controller"
+import { createAuthController } from "../interface/http/auth/auth.controller"
+import { authPlugin } from "./plugins/auth.plugin"
 
 export const createServer = () =>
     new Elysia()
@@ -19,20 +21,23 @@ export const createServer = () =>
                     description: "API สำหรับระบบ OKR Management",
                 },
                 tags: [
-                    { name: "Cycles", description: "จัดการ OKR Cycles" },
-                    { name: "Objectives", description: "จัดการ Objectives" },
-                    { name: "Key Results", description: "จัดการ Key Results และ Check-ins" },
-                    { name: "Users", description: "จัดการ Users" },
+                    { name: "Auth", description: "Authentication" },
+                    { name: "Users", description: "Manage Users" },
+                    { name: "Cycles", description: "Manage OKR Cycles" },
+                    { name: "Objectives", description: "Manage Objectives" },
+                    { name: "Key Results", description: "Manage Key Results and Check-ins" },
                 ],
             },
         }))
 
-        .get("/health", () => ({ status: "ok" }), {
-            detail: { tags: ["Health"], summary: "Health check" },
-        })
+        // Public routes — ไม่ต้อง login
+        .group("/api/v1", (app) =>
+            app.use(createAuthController(container.login))
+        )
 
         .group("/api/v1", (app) =>
             app
+                .use(authPlugin)
                 .use(createCyclesController(container.createCycle, container.getCycles))
                 .use(createObjectivesController(container.createObjective, container.getObjectives))
                 .use(createKeyResultsController(container.createKeyResult, container.getKeyResults, container.submitCheckIn))

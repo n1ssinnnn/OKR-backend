@@ -23,12 +23,19 @@ export class CreateUserUseCase {
         if (!input.roleId) throw new Error("roleId is required")
         if (!input.departmentId) throw new Error("departmentId is required")
 
+        // เช็ค email ซ้ำ
+        const existing = await this.userRepo.findByEmail(email)
+        if (existing) throw new Error("email already exists")
+
+        // hash password ก่อน create
+        const hashedPassword = await Bun.password.hash("changeme123")
+
         const data: CreateUserInput = {
             firstName,
             lastName,
             name: `${firstName} ${lastName}`,
             email,
-            password: "1234",
+            password: hashedPassword,
             roleId: input.roleId,
             departmentId: input.departmentId,
         }

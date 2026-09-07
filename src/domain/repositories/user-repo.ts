@@ -12,6 +12,7 @@ export type BulkCreateResult = {
 export interface UserRepository {
 	findAll(): Promise<User[]>
 	findById(id: string): Promise<User | null>
+	findByEmail(email: string): Promise<User | null>
 	create(data: CreateUserInput): Promise<User>
 	bulkCreate(data: CreateUserInput[]): Promise<BulkCreateResult>
 	update(id: string, data: UpdateUserInput): Promise<User>

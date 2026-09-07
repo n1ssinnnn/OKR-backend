@@ -64,6 +64,15 @@ export class PrismaUserRepository implements UserRepository {
         return this.mapToEntity(row as UserRow)
     }
 
+    async findByEmail(email: string): Promise<User | null> {
+        const row = await this.prisma.user.findFirst({
+            where: { email, deletedAt: null },
+            include: this.include,
+        })
+        if (!row) return null
+        return this.mapToEntity(row as UserRow)
+    }
+
     async create(data: CreateUserInput): Promise<User> {
         const row = await this.prisma.user.create({
             data,
@@ -91,16 +100,22 @@ export class PrismaUserRepository implements UserRepository {
         }
 
         if (success.length > 0) {
-            await this.prisma.user.createMany({
-                data: success.map(u => ({
-                    name: `${u.firstName} ${u.lastName}`,
+
+            const dataWithHashedPassword = await Promise.all(
+                success.map(async (u) => ({
+                    id: u.id,
+                    name: u.name,
                     firstName: u.firstName,
                     lastName: u.lastName,
                     email: u.email,
-                    password: u.password,
+                    password: await Bun.password.hash("changeme123"),  // hash ทุกคน
                     roleId: u.roleId,
                     departmentId: u.departmentId,
-                })),
+                }))
+            )
+
+            await this.prisma.user.createMany({
+                data: dataWithHashedPassword,
                 skipDuplicates: true,
             })
         }

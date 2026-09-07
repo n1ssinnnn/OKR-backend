@@ -18,6 +18,7 @@ import { SubmitCheckInUseCase } from "../application/use-cases/checkins/submit-c
 import { GetUsersUseCase } from "../application/use-cases/users/get-users.usecase"
 import { CreateUserUseCase } from "../application/use-cases/users/create-user.usecase"
 import { BulkImportUsersUseCase } from "../application/use-cases/users/bulk-import-users.usecase"
+import { LoginUseCase } from "../application/use-cases/auth/login.usecase"
 
 // --- Repositories (Layer 4) ---
 const userRepo = new PrismaUserRepository(prisma)
@@ -28,6 +29,15 @@ const checkInRepo = new PrismaCheckInRepository(prisma)
 
 // --- Use Cases (Layer 2) ---
 export const container = {
+
+    // Login
+    login: new LoginUseCase(userRepo),
+
+    // Users
+    createUser: new CreateUserUseCase(userRepo),
+    getUsers: new GetUsersUseCase(userRepo),
+    bulkImport: new BulkImportUsersUseCase(userRepo),
+
     // Cycles
     createCycle: new CreateCycleUseCase(cycleRepo),
     getCycles: new GetCyclesUseCase(cycleRepo),
@@ -42,9 +52,4 @@ export const container = {
 
     // Check-ins
     submitCheckIn: new SubmitCheckInUseCase(checkInRepo, keyResultRepo, objectiveRepo),
-
-    // Users
-    createUser: new CreateUserUseCase(userRepo),
-    getUsers: new GetUsersUseCase(userRepo),
-    bulkImport: new BulkImportUsersUseCase(userRepo),
 }
