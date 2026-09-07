@@ -21,3 +21,14 @@ export interface User {
     updatedAt?: Date | null;
     deletedAt?: Date | null;
 }
+
+export interface AuthPayload {
+    userId: string
+    email: string
+    role: string
+}
+
+export interface LoginResult {
+    accessToken: string
+    user: Omit<User, "password">
+}
