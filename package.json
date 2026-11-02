@@ -1,0 +1,26 @@
+{
+  "name": "okr-backend",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "drizzle-kit": "^0.31.11"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "better-auth": "^1.7.15",
+    "dotenv": "^18.0.9",
+    "drizzle-orm": "^1.0.0-rc.5",
+    "elysia": "^1.4.30",
+    "postgres": "^4.0.0"
+  },
+  "scripts": {
+    "generate": "bunx --bun drizzle-kit generate --config=packages/db/drizzle.config.ts --name ${name}",
+    "dev": "bun --env-file .env --filter app --elide-lines=0 dev",
+    "db:studio": "bun --env-file .env drizzle-kit studio --config=packages/db/drizzle.config.ts"
+  }
+}
