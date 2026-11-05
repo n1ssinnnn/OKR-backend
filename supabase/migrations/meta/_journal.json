@@ -8,6 +8,13 @@
       "when": 1793604730650,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793843260828,
+      "tag": "0001_create_user_department_and_position_table",
+      "breakpoints": true
     }
   ]
 }
