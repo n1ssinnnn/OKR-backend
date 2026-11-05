@@ -1,18 +1,39 @@
 import { relations } from 'drizzle-orm';
 import { pgTable, text, timestamp, boolean, index } from 'drizzle-orm/pg-core';
+import type { UserRole } from '../domains/entities/user';
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
+  firstName: text('firstName').notNull(),
+  lastName: text('lastName').notNull(),
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').default(false).notNull(),
   image: text('image'),
+  role: text('role').$type<UserRole>().default('employee').notNull(),
+  departmentId: text('departmentId')
+    .notNull()
+    .references(() => department.id, { onDelete: 'restrict' }),
+  positionId: text('positionId')
+    .notNull()
+    .references(() => position.id, { onDelete: 'restrict' }),
+  isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
 });
+
+export const department = pgTable('department', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull()
+})
+
+export const position = pgTable('position', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull()
+})
 
 export const session = pgTable(
   'session',
@@ -73,9 +94,25 @@ export const verification = pgTable(
   (table) => [index('verification_identifier_idx').on(table.identifier)],
 );
 
-export const userRelations = relations(user, ({ many }) => ({
+export const userRelations = relations(user, ({ one, many }) => ({
   sessions: many(session),
   accounts: many(account),
+  department: one(department, {
+    fields: [user.departmentId],
+    references: [department.id],
+  }),
+  position: one(position, {
+    fields: [user.positionId],
+    references: [position.id],
+  }),
+}));
+
+export const departmentRelations = relations(department, ({ many }) => ({
+  users: many(user),
+}));
+
+export const positionRelations = relations(position, ({ many }) => ({
+  users: many(user),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
