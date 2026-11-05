@@ -22,6 +22,12 @@
   "scripts": {
     "generate": "bunx --bun drizzle-kit generate --config=packages/db/drizzle.config.ts --name ${name}",
     "dev": "bun --env-file .env --filter app --elide-lines=0 dev",
-    "db:studio": "bun --env-file .env drizzle-kit studio --config=packages/db/drizzle.config.ts"
+    "dev:local": "bun --env-file .env.local --filter app --elide-lines=0 dev",
+    "db:local:up": "docker compose up -d db",
+    "db:local:down": "docker compose down",
+    "db:migrate:local": "bun --env-file .env.local drizzle-kit migrate --config=packages/db/drizzle.config.ts",
+    "db:migrate:supabase": "bun --env-file .env drizzle-kit migrate --config=packages/db/drizzle.config.ts",
+    "db:studio:local": "bun --env-file .env.local drizzle-kit studio --config=packages/db/drizzle.config.ts",
+    "db:studio:supabase": "bun --env-file .env drizzle-kit studio --config=packages/db/drizzle.config.ts"
   }
 }
