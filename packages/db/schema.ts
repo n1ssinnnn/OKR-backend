@@ -23,6 +23,9 @@ export const user = pgTable('user', {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
+  banned: boolean("banned"),
+  banReason: text("ban_reason"),
+  banExpires: timestamp("ban_expires", { precision: 6, withTimezone: true }),
 });
 
 export const department = pgTable('department', {
@@ -46,6 +49,7 @@ export const session = pgTable(
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
     ipAddress: text('ip_address'),
+    impersonatedBy: text("impersonated_by"),
     userAgent: text('user_agent'),
     userId: text('user_id')
       .notNull()

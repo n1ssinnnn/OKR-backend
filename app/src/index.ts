@@ -1,8 +1,10 @@
 import { Elysia } from 'elysia';
 import { openapi } from '@elysia/openapi'
+import { authRoute } from './routers/auth-route';
 
 const app = new Elysia()
 
+  // Open API
   .use(openapi({
     documentation: {
       tags: [
@@ -12,11 +14,8 @@ const app = new Elysia()
     }
   }))
 
-  .get('/', () => 'Hello Elysia', {
-    detail: {
-      tags: ['Authentication']
-    }
-  })
+  // API routes 
+  .group('/api/v1', (app) => app.use(authRoute))
 
   .listen(3001);
 
