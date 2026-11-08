@@ -29,6 +29,13 @@
       "when": 1794060315916,
       "tag": "0003_add_impersonatedBy_field",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794061972834,
+      "tag": "0004_department_and_position_relation",
+      "breakpoints": true
     }
   ]
 }
