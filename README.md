@@ -40,7 +40,15 @@ This is the recommended setup for development. It uses a PostgreSQL container an
    bun run db:migrate:local
    ```
 
-4. Start the API using `.env.local`:
+4. Seed the initial departments and positions:
+
+   ```bash
+   bun run db:seed:local
+   ```
+
+   The seed uses CUID2 IDs and can be run again safely; it skips departments and positions that already exist.
+
+5. Start the API using `.env.local`:
 
    ```bash
    bun run dev:local
@@ -73,10 +81,11 @@ Then choose an explicit Supabase command:
 ```bash
 bun run dev
 bun run db:migrate:supabase
+bun run db:seed:supabase
 bun run db:studio:supabase
 ```
 
-These commands use `DATABASE_URL` from `.env`. The migration command changes the Supabase database, so use it only when you intend to apply the checked-in migrations there.
+These commands use `DATABASE_URL` from `.env`. The migration and seed commands change the Supabase database, so use them only when you intend to apply the checked-in migrations and initial data there.
 
 ## Database and migration scripts
 
@@ -86,6 +95,8 @@ These commands use `DATABASE_URL` from `.env`. The migration command changes the
 | `bun run db:local:down` | Stops the local container; keeps its data volume. |
 | `bun run db:migrate:local` | Applies migrations to the database in `.env.local`. |
 | `bun run db:migrate:supabase` | Applies migrations to the database in `.env` (Supabase). |
+| `bun run db:seed:local` | Inserts initial departments and positions into the database in `.env.local`. |
+| `bun run db:seed:supabase` | Inserts initial departments and positions into the database in `.env` (Supabase). |
 | `bun run db:studio:local` | Opens Drizzle Studio connected to the local database. |
 | `bun run db:studio:supabase` | Opens Drizzle Studio connected to Supabase. |
 | `bun run dev:local` | Starts the API with `.env.local`. |
@@ -93,6 +104,7 @@ These commands use `DATABASE_URL` from `.env`. The migration command changes the
 | `name=add_example bun run generate` | Generates a migration from the Drizzle schema; it does not apply it to a database. |
 
 Generated migration files are stored in `supabase/migrations/`. To apply one, run the matching `db:migrate:*` command.
+Run the matching `db:seed:*` command after migrating to insert the initial departments and positions. The seed is safe to rerun and generates IDs with CUID2.
 
 ## Environment files
 
