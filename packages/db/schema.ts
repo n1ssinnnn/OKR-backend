@@ -23,16 +23,22 @@ export const user = pgTable('user', {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
+  banned: boolean("banned"),
+  banReason: text("ban_reason"),
+  banExpires: timestamp("ban_expires", { precision: 6, withTimezone: true }),
 });
 
 export const department = pgTable('department', {
   id: text('id').primaryKey(),
-  name: text('name').notNull()
+  name: text('name').notNull(),
 })
 
 export const position = pgTable('position', {
   id: text('id').primaryKey(),
-  name: text('name').notNull()
+  name: text('name').notNull(),
+  departmentId: text("department_id")
+    .notNull()
+    .references(() => department.id, { onDelete: "restrict" }),
 })
 
 export const session = pgTable(
@@ -46,6 +52,7 @@ export const session = pgTable(
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
     ipAddress: text('ip_address'),
+    impersonatedBy: text("impersonated_by"),
     userAgent: text('user_agent'),
     userId: text('user_id')
       .notNull()
@@ -109,10 +116,15 @@ export const userRelations = relations(user, ({ one, many }) => ({
 
 export const departmentRelations = relations(department, ({ many }) => ({
   users: many(user),
+  positions: many(position),
 }));
 
-export const positionRelations = relations(position, ({ many }) => ({
+export const positionRelations = relations(position, ({ one, many }) => ({
   users: many(user),
+  department: one(department, {
+    fields: [position.departmentId],
+    references: [department.id],
+  }),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
