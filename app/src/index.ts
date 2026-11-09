@@ -1,6 +1,8 @@
 import { Elysia } from 'elysia';
 import { openapi } from '@elysia/openapi'
 import { authRoute } from './routers/auth-route';
+import { cors } from '@elysia/cors'
+import { auth } from '../../packages/auth/auth';
 
 const app = new Elysia()
 
@@ -13,6 +15,19 @@ const app = new Elysia()
       ]
     }
   }))
+
+  // CORS
+  .use(
+    cors({
+      origin: "http://localhost:3001",
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      credentials: true,
+      allowedHeaders: ["Content-Type", "Authorization"],
+    }),
+  )
+
+  // mount
+  .mount(auth.handler)
 
   // API routes 
   .group('/api/v1', (app) => app.use(authRoute))

@@ -9,12 +9,16 @@ export const authRoute = new Elysia({
     }
 })
 
-    .post('/sign-up',
-        async ({ body }) => {
-            const user = await authService.signIn(body);
+    .post('/sign-in',
+        async ({ body, request: { headers } }) => {
+            const user = await authService.signIn(body, headers);
             return user
         },
         {
             body: signInRequest
         }
     )
+
+    .post('/sign-out', async ({ request: { headers } }) => {
+        return authService.signOut(headers);
+    });
