@@ -140,3 +140,15 @@ export const accountRelations = relations(account, ({ one }) => ({
     references: [user.id],
   }),
 }));
+
+const schemaTables = {
+  user,
+  department,
+  position,
+  session,
+  account,
+  verification
+}
+
+export const Schema = schemaTables;
+export type Schema = typeof schemaTables;
