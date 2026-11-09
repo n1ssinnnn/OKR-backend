@@ -1,9 +1,10 @@
 import { Elysia } from 'elysia';
 import { openapi } from '@elysia/openapi'
-import { authRoute } from './routers/auth-route';
 import { cors } from '@elysia/cors'
 import { auth } from '../../packages/auth/auth';
 import { userRoute } from './routers/user-route';
+import { signInRoute, signOutRoute } from './routers/auth-route';
+import { requireAuth } from './middleware/require-auth';
 
 const app = new Elysia()
 
@@ -31,7 +32,13 @@ const app = new Elysia()
   .mount(auth.handler)
 
   // API routes 
-  .group('/api/v1', (app) => app.use(authRoute).use(userRoute))
+  .group('/api/v1', (app) =>
+    app
+      .use(signInRoute)
+      .use(requireAuth)
+      .use(signOutRoute)
+      .use(userRoute)
+  )
 
   .listen(3001);
 
