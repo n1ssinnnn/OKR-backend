@@ -12,6 +12,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@elysia/cors": "^1.4.3",
     "@elysia/openapi": "^1.4.17",
     "@paralleldrive/cuid2": "^3.3.0",
     "@supabase/supabase-js": "^2.118.0",
