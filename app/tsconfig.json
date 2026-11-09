@@ -103,7 +103,9 @@
     "skipLibCheck": true /* Skip type checking all .d.ts files. */,
     "paths": {
       "@db": ["../packages/db/index.ts"],
-      "@db/*": ["../packages/db/*"]
+      "@db/*": ["../packages/db/*"],
+      "@infra": ["../packages/domains/infra/index.ts"],
+      "@infra/*": ["../packages/domains/infra/*"]
     }
   }
 }
