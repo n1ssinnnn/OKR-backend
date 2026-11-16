@@ -28,6 +28,8 @@ This is the recommended setup for development. It uses a PostgreSQL container an
    cp .env.local.example .env.local
    ```
 
+   Replace the `BETTER_AUTH_SECRET` placeholder with a random value, for example the output of `openssl rand -base64 32`.
+
 2. Start PostgreSQL:
 
    ```bash
@@ -48,11 +50,27 @@ This is the recommended setup for development. It uses a PostgreSQL container an
 
    The seed uses CUID2 IDs and can be run again safely; it skips departments and positions that already exist.
 
-5. Start the API using `.env.local`:
+5. Create the first admin account:
+
+   ```bash
+   bun run db:create-admin:local \
+     --email admin@example.com \
+     --password 'choose-a-password' \
+     --first-name Admin \
+     --last-name User \
+     --department "Human Resources" \
+     --position "HR Manager"
+   ```
+
+   Public sign-up is disabled, so this command is the only way to create the first account. The password must be at least 8 characters. `--department` and `--position` take names from the seed (not IDs), and the position must belong to that department. The command stops without changes if the email already exists.
+
+6. Start the API using `.env.local`:
 
    ```bash
    bun run dev:local
    ```
+
+   Sign in as the admin with `POST /api/v1/auth/sign-in`. API documentation is available at `http://localhost:3001/openapi`.
 
 The API listens on `http://localhost:3001`. The local database connection is configured in `.env.local`; the example uses `localhost:5432`.
 
@@ -82,10 +100,38 @@ Then choose an explicit Supabase command:
 bun run dev
 bun run db:migrate:supabase
 bun run db:seed:supabase
+bun run db:create-admin:supabase --email … --password … --first-name … --last-name … --department "…" --position "…"
 bun run db:studio:supabase
 ```
 
-These commands use `DATABASE_URL` from `.env`. The migration and seed commands change the Supabase database, so use them only when you intend to apply the checked-in migrations and initial data there.
+These commands use `DATABASE_URL` from `.env`. The migration, seed and create-admin commands change the Supabase database, so use them only when you intend to change data there. If the Supabase database already has an admin, ask that admin to create your account instead of running `db:create-admin:supabase`.
+
+## User accounts
+
+Users cannot sign up by themselves. Accounts are created in one of three ways:
+
+| Who | How |
+| --- | --- |
+| First admin | `bun run db:create-admin:local` or `bun run db:create-admin:supabase` (see above). |
+| Admin, one user | `POST /api/v1/user` with `firstName`, `lastName`, `email`, `role`, `departmentId`, `positionId`. |
+| Admin, many users | `POST /api/v1/user/import` with a `.xlsx` file in the multipart field `file`. |
+
+Both admin endpoints generate a random temporary password for each new user and return it **once** in the response; only its hash is stored. Give it to the user so they can sign in with `POST /api/v1/auth/sign-in`.
+
+`role` is one of `admin`, `executive`, `manager`, `employee`. Only admins can call these endpoints.
+
+### Excel import format
+
+The first worksheet is read. Row 1 must contain these column headers (any order; other columns are ignored):
+
+| firstName | lastName | email | role | department | position |
+| --- | --- | --- | --- | --- | --- |
+| Somchai | Jaidee | somchai@example.com | executive | Marketing | Marketing Manager |
+
+- `department` and `position` are **names**, matched case-insensitively. The position must belong to that department.
+- Every field is required. Emails must be unique within the file and must not already exist.
+- At most 500 rows and 5 MB per file.
+- The import is all-or-nothing: if any row is invalid, no users are created and the response (422) lists every problem by row number.
 
 ## Database and migration scripts
 
@@ -97,6 +143,8 @@ These commands use `DATABASE_URL` from `.env`. The migration and seed commands c
 | `bun run db:migrate:supabase` | Applies migrations to the database in `.env` (Supabase). |
 | `bun run db:seed:local` | Inserts initial departments and positions into the database in `.env.local`. |
 | `bun run db:seed:supabase` | Inserts initial departments and positions into the database in `.env` (Supabase). |
+| `bun run db:create-admin:local …` | Creates an admin account in the database in `.env.local`. |
+| `bun run db:create-admin:supabase …` | Creates an admin account in the database in `.env` (Supabase). |
 | `bun run db:studio:local` | Opens Drizzle Studio connected to the local database. |
 | `bun run db:studio:supabase` | Opens Drizzle Studio connected to Supabase. |
 | `bun run dev:local` | Starts the API with `.env.local`. |

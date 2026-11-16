@@ -1,11 +1,17 @@
 import { db } from "../db";
-import { user, type Schema } from "../db/schema";
+import { account, user, type Schema } from "../db/schema";
 import { ORDER_DIRECTION, type OrderingParams, type PagingParams, type PagingResult } from "../domains/entities/common";
 import type { User } from "../domains/entities/user";
-import { count } from 'drizzle-orm';
+import type { CreateUserRequest } from "../domains/dto/user";
+import { count, inArray } from 'drizzle-orm';
+import { createId } from '@paralleldrive/cuid2';
 import { buildPagingResult } from "../domains/helper/paging";
 
 type UserQueryRow = typeof Schema.user.$inferSelect
+
+export type NewUserWithCredential = CreateUserRequest & {
+    passwordHash: string;
+};
 
 export class UserRepository {
 
@@ -79,4 +85,48 @@ export class UserRepository {
         );
     }
 
+    // Find which of the given emails are already registered
+    async findExistingEmails(emails: string[]): Promise<string[]> {
+        if (emails.length === 0) return [];
+        const rows = await db
+            .select({ email: user.email })
+            .from(user)
+            .where(inArray(user.email, emails));
+        return rows.map((row) => row.email);
+    }
+
+    // Create users with their Better Auth credential accounts.
+    // All rows are inserted in one transaction: either every user is created or none.
+    async createManyWithCredentials(inputs: NewUserWithCredential[]): Promise<User[]> {
+        if (inputs.length === 0) return [];
+
+        const userRows = inputs.map((input) => ({
+            id: createId(),
+            firstName: input.firstName,
+            lastName: input.lastName,
+            name: `${input.firstName} ${input.lastName}`,
+            email: input.email,
+            role: input.role,
+            departmentId: input.departmentId,
+            positionId: input.positionId,
+        }));
+
+        // Same shape Better Auth writes for email/password sign-up,
+        // so these users can sign in through /auth/sign-in.
+        const accountRows = userRows.map((row, i) => ({
+            id: createId(),
+            accountId: row.id,
+            providerId: 'credential',
+            userId: row.id,
+            password: inputs[i]!.passwordHash,
+        }));
+
+        const created = await db.transaction(async (tx) => {
+            const inserted = await tx.insert(user).values(userRows).returning();
+            await tx.insert(account).values(accountRows);
+            return inserted;
+        });
+
+        return created.map((row) => this.mapToEntity(row));
+    }
 }

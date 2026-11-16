@@ -1,4 +1,6 @@
-export type UserRole = 'admin' | 'executive' | 'manager' | 'employee';
+export const USER_ROLES = ['admin', 'executive', 'manager', 'employee'] as const;
+
+export type UserRole = (typeof USER_ROLES)[number];
 
 export type UserStatus = boolean
 

@@ -7,6 +7,8 @@ const internalServerError = {
 };
 
 export const errorHandler = new Elysia({ name: 'error-handler' }).onError(
+    // global: plugin hooks are local by default and would not apply to other routes
+    { as: 'global' },
     ({ code, error, set }) => {
         if (error instanceof Errors.ApiError) {
             set.status = error.status;
@@ -20,6 +22,7 @@ export const errorHandler = new Elysia({ name: 'error-handler' }).onError(
                 error: {
                     title: error.title,
                     message: error.message,
+                    ...(error.details !== undefined && { details: error.details }),
                 },
             };
         }
@@ -31,6 +34,10 @@ export const errorHandler = new Elysia({ name: 'error-handler' }).onError(
                     error: {
                         title: 'ValidationError',
                         message: 'Request validation failed',
+                        details: error.all.map((issue) => ({
+                            field: 'path' in issue ? issue.path.replace(/^\//, '') : undefined,
+                            message: issue.summary ?? issue.message,
+                        })),
                     },
                 };
 

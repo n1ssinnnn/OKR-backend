@@ -20,6 +20,7 @@
     "dotenv": "^18.0.9",
     "drizzle-orm": "^0.45.4",
     "elysia": "^1.4.30",
+    "exceljs": "^4.4.0",
     "postgres": "^4.0.0"
   },
   "scripts": {
@@ -33,6 +34,8 @@
     "db:studio:local": "bun --env-file .env.local drizzle-kit studio --config=packages/db/drizzle.config.ts",
     "db:studio:supabase": "bun --env-file .env drizzle-kit studio --config=packages/db/drizzle.config.ts",
     "db:seed:local": "bun --env-file .env.local ./packages/db/seed.ts",
-    "db:seed:supabase": "bun --env-file .env ./packages/db/seed.ts"
+    "db:seed:supabase": "bun --env-file .env ./packages/db/seed.ts",
+    "db:create-admin:local": "bun --env-file .env.local ./packages/db/create-admin.ts",
+    "db:create-admin:supabase": "bun --env-file .env ./packages/db/create-admin.ts"
   }
 }

@@ -39,6 +39,9 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
+    // Accounts are created only by admins (POST /api/v1/user, /user/import)
+    disableSignUp: true,
   },
-  plugins: [admin()],
+  // admin() would otherwise default new users to role 'user', which is not a UserRole
+  plugins: [admin({ defaultRole: 'employee' })],
 });

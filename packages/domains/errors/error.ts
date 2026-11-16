@@ -3,6 +3,7 @@ export class ApiError extends Error {
         message: string,
         public status: number,
         public title: string,
+        public details?: unknown,
     ) {
         super(message);
         this.name = 'ApiError';
@@ -42,8 +43,8 @@ export class Conflict extends ApiError {
 }
 
 export class UnprocessableEntity extends ApiError {
-    constructor(message: string = 'Unprocessable entity') {
-        super(message, 422, 'UnprocessableEntity');
+    constructor(message: string = 'Unprocessable entity', details?: unknown) {
+        super(message, 422, 'UnprocessableEntity', details);
     }
 }
 

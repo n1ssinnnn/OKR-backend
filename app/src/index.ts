@@ -5,8 +5,12 @@ import { auth } from '../../packages/auth/auth';
 import { userRoute } from './routers/user-route';
 import { signInRoute, signOutRoute } from './routers/auth-route';
 import { requireAuth } from './middleware/require-auth';
+import { errorHandler } from './error-handler';
 
 const app = new Elysia()
+
+  // Error handler (must be registered before routes)
+  .use(errorHandler)
 
   // Open API
   .use(openapi({
