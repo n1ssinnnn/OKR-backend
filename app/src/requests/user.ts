@@ -19,6 +19,16 @@ export const createUserRequest = t.Object({
     positionId: requiredText,
 })
 
+export const updateUserRequest = t.Object({
+    departmentId: requiredText,
+    positionId: requiredText,
+    role: t.UnionEnum(USER_ROLES),
+})
+
+export const updateUserRoleRequest = t.Object({
+    role: t.UnionEnum(USER_ROLES),
+})
+
 export const importUsersRequest = t.Object({
     file: t.File({ maxSize: '5m' }),
 })

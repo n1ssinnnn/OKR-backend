@@ -3,7 +3,7 @@ import { account, user, type Schema } from "../db/schema";
 import { ORDER_DIRECTION, type OrderingParams, type PagingParams, type PagingResult } from "../domains/entities/common";
 import type { User } from "../domains/entities/user";
 import type { CreateUserRequest } from "../domains/dto/user";
-import { count, inArray } from 'drizzle-orm';
+import { count, eq, inArray } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { buildPagingResult } from "../domains/helper/paging";
 
@@ -36,10 +36,13 @@ export class UserRepository {
         };
     }
 
+    // Soft-deleted users (isActive = false) are left out of every find below,
+    // so they behave as if they did not exist.
+
     // Find by ID
     async findById(id: string): Promise<User | null> {
         const row = await db.query.user.findFirst({
-            where: (user, { eq }) => eq(user.id, id),
+            where: (user, { and, eq }) => and(eq(user.id, id), eq(user.isActive, true)),
         });
 
         if (!row) {
@@ -52,7 +55,7 @@ export class UserRepository {
     // Find by email
     async findByEmail(email: string): Promise<User | null> {
         const row = await db.query.user.findFirst({
-            where: (user, { eq }) => eq(user.email, email),
+            where: (user, { and, eq }) => and(eq(user.email, email), eq(user.isActive, true)),
         });
 
         if (!row) {
@@ -70,12 +73,13 @@ export class UserRepository {
 
         const [rows, countResult] = await Promise.all([
             db.query.user.findMany({
+                where: (users, { eq }) => eq(users.isActive, true),
                 orderBy: (users, { asc, desc }) =>
                     isAsc ? asc(users[orderByKey]) : desc(users[orderByKey]),
                 limit: paging.perPage,
                 offset: (paging.page - 1) * paging.perPage,
             }),
-            db.select({ total: count() }).from(user)
+            db.select({ total: count() }).from(user).where(eq(user.isActive, true)),
         ])
 
         return buildPagingResult(
@@ -85,7 +89,8 @@ export class UserRepository {
         );
     }
 
-    // Find which of the given emails are already registered
+    // Find which of the given emails are already registered.
+    // Soft-deleted users are included on purpose: email is unique in the table, so their email cannot be reused.
     async findExistingEmails(emails: string[]): Promise<string[]> {
         if (emails.length === 0) return [];
         const rows = await db

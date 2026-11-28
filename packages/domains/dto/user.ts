@@ -14,6 +14,16 @@ export type CreateUserRequest = {
     positionId: string;
 };
 
+export type UpdateUserRequest = {
+    departmentId: string;
+    positionId: string;
+    role: UserRole;
+};
+
+export type UpdateUserRoleRequest = {
+    role: UserRole;
+};
+
 // Returned once to the admin; the password is stored only as a hash.
 export type CreatedUserResult = {
     user: User;

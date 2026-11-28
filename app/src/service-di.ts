@@ -13,6 +13,6 @@ const hashPassword = async (password: string) => (await auth.$context).password.
 
 // Services
 const authService = new AuthService(auth);
-const userService = new UserService(userRepository, organizationRepository, hashPassword);
+const userService = new UserService(userRepository, organizationRepository, hashPassword, auth);
 
 export { authService, userService }
