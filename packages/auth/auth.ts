@@ -36,6 +36,13 @@ export const auth = betterAuth({
         required: true,
         input: true,
       },
+      // false = soft-deleted (DELETE /api/v1/user/:id). Set by admins only, never by sign-up/update input.
+      isActive: {
+        type: 'boolean',
+        required: false,
+        defaultValue: true,
+        input: false,
+      },
     },
   },
   emailAndPassword: {

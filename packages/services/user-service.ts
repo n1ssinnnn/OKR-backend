@@ -2,7 +2,8 @@ import type { OrderingParams, PagingParams, PagingResult } from "../domains/enti
 import ExcelJS from "exceljs";
 import { isAPIError } from "better-auth/api";
 import type { auth as Auth } from "../auth/auth";
-import type { CreatedUserResult, CreateUserRequest, ExcelUserRow, ImportRowError, ImportUsersResult } from "../domains/dto/user";
+import type { statement } from "../auth/permissions";
+import type { CreatedUserResult, CreateUserRequest, ExcelUserRow, ImportRowError, ImportUsersResult, UpdateUserRequest } from "../domains/dto/user";
 import { USER_ROLES, type User, type UserRole } from "../domains/entities/user";
 import { Errors } from "../domains/errors";
 import { generateTemporaryPassword } from "../domains/helper/password";
@@ -13,6 +14,10 @@ export type PasswordHasher = (password: string) => Promise<string>;
 
 type NewUserWithPassword = CreateUserRequest & { password: string };
 type UserCreator = (inputs: NewUserWithPassword[]) => Promise<User[]>;
+type Permissions = { user?: (typeof statement)['user'][number][] };
+type OrganizationInput = Pick<CreateUserRequest, 'departmentId' | 'positionId'>;
+
+const DELETED_BAN_REASON = 'Account deleted';
 
 const IMPORT_COLUMNS = ['firstName', 'lastName', 'email', 'role', 'department', 'position'] as const;
 const MAX_IMPORT_ROWS = 500;
@@ -49,37 +54,24 @@ export class UserService {
     }
 
     // getById
-    async getUserById(id: string): Promise<User | null> {
+    // getById (soft-deleted users get 404)
+    async getUserById(id: string): Promise<User> {
         try {
-            const user = await this.userRepo.findById(id);
-            if (!user) {
-                throw new Errors.NotFound('User not found')
-            }
-            return user
+            return await this.getActiveUser(id);
         }
 
         catch (error: unknown) {
-            if (error instanceof Errors.ApiError) throw error;
-            const err = error as {
-                statusCode?: number;
-                status?: number;
-                message?: string;
-            }
-            throw new Errors.InternalServerError(err?.message ?? 'Failed to get user by id')
+            throw this.toServiceError(error, 'Failed to get user by id');
         }
     }
 
     // create (through Better Auth's admin plugin, which checks that the caller in `headers` may create users and set roles)
     async createUser(input: CreateUserRequest, headers: Headers): Promise<CreatedUserResult> {
         try {
+            await this.assertPermission(headers, { user: ['create'] });
+
             const normalized = this.normalize(input);
-            const issues = await this.findIssues([normalized]);
-            const issue = issues[0];
-            if (issue) {
-                if (issue.kind === 'conflict') throw new Errors.Conflict(issue.message);
-                if (issue.kind === 'not-found') throw new Errors.NotFound(issue.message);
-                throw new Errors.BadRequest(issue.message);
-            }
+            this.throwFirstIssue(await this.findIssues([normalized]));
 
             const [created] = await this.createWithTemporaryPasswords(
                 [normalized],
@@ -97,6 +89,73 @@ export class UserService {
                 message?: string;
             }
             throw new Errors.InternalServerError(err?.message ?? 'Failed to create user')
+        }
+    }
+
+    // update department, position and role (PUT /user/:id)
+    async updateUser(id: string, input: UpdateUserRequest, headers: Headers): Promise<User> {
+        try {
+            await this.assertPermission(headers, { user: ['update', 'set-role'] });
+            await this.getActiveUser(id);
+
+            const normalized: UpdateUserRequest = {
+                departmentId: input.departmentId.trim(),
+                positionId: input.positionId.trim(),
+                role: input.role,
+            };
+            this.throwFirstIssue(await this.findOrganizationIssues([normalized]));
+
+            // Checks user:update, plus user:set-role because data includes role
+            await this.auth.api.adminUpdateUser({
+                headers,
+                body: { userId: id, data: normalized },
+            });
+            return await this.getActiveUser(id);
+        }
+
+        catch (error: unknown) {
+            throw this.toServiceError(error, 'Failed to update user');
+        }
+    }
+
+    // update role only (PATCH /user/:id)
+    async updateUserRole(id: string, role: UserRole, headers: Headers): Promise<User> {
+        try {
+            await this.assertPermission(headers, { user: ['set-role'] });
+            await this.getActiveUser(id);
+
+            // Checks user:set-role and that the role is one of the configured roles
+            await this.auth.api.setRole({
+                headers,
+                body: { userId: id, role },
+            });
+            return await this.getActiveUser(id);
+        }
+
+        catch (error: unknown) {
+            throw this.toServiceError(error, 'Failed to update user role');
+        }
+    }
+
+    // soft delete (DELETE /user/:id): the row is kept, isActive = false.
+    // The user is also banned, so Better Auth revokes their sessions and refuses new sign-ins.
+    async deleteUser(id: string, headers: Headers): Promise<void> {
+        try {
+            await this.assertPermission(headers, { user: ['delete'] });
+            await this.getActiveUser(id);
+
+            // Checks user:update and user:ban, and refuses to ban the caller themselves
+            await this.auth.api.adminUpdateUser({
+                headers,
+                body: {
+                    userId: id,
+                    data: { isActive: false, banned: true, banReason: DELETED_BAN_REASON, banExpires: null },
+                },
+            });
+        }
+
+        catch (error: unknown) {
+            throw this.toServiceError(error, 'Failed to delete user');
         }
     }
 
@@ -224,23 +283,37 @@ export class UserService {
     // and the position belongs to the given department.
     private async findIssues(inputs: CreateUserRequest[]): Promise<RowIssue[]> {
         if (inputs.length === 0) return [];
-        const unique = (values: string[]) => [...new Set(values)];
 
-        const [existingEmails, departments, positions] = await Promise.all([
-            this.userRepo.findExistingEmails(unique(inputs.map((i) => i.email))),
-            this.orgRepo.findDepartmentsByIds(unique(inputs.map((i) => i.departmentId))),
-            this.orgRepo.findPositionsByIds(unique(inputs.map((i) => i.positionId))),
+        const [existingEmails, organizationIssues] = await Promise.all([
+            this.userRepo.findExistingEmails([...new Set(inputs.map((i) => i.email))]),
+            this.findOrganizationIssues(inputs),
         ]);
 
         const emailSet = new Set(existingEmails);
-        const departmentSet = new Set(departments.map((d) => d.id));
-        const positionMap = new Map(positions.map((p) => [p.id, p]));
-
         const issues: RowIssue[] = [];
         inputs.forEach((input, index) => {
             if (emailSet.has(input.email)) {
                 issues.push({ index, field: 'email', kind: 'conflict', message: `Email already exists: ${input.email}` });
             }
+        });
+        return [...issues, ...organizationIssues].sort((a, b) => a.index - b.index);
+    }
+
+    // Department/position exist, and the position belongs to the given department
+    private async findOrganizationIssues(inputs: OrganizationInput[]): Promise<RowIssue[]> {
+        if (inputs.length === 0) return [];
+        const unique = (values: string[]) => [...new Set(values)];
+
+        const [departments, positions] = await Promise.all([
+            this.orgRepo.findDepartmentsByIds(unique(inputs.map((i) => i.departmentId))),
+            this.orgRepo.findPositionsByIds(unique(inputs.map((i) => i.positionId))),
+        ]);
+
+        const departmentSet = new Set(departments.map((d) => d.id));
+        const positionMap = new Map(positions.map((p) => [p.id, p]));
+
+        const issues: RowIssue[] = [];
+        inputs.forEach((input, index) => {
             if (!departmentSet.has(input.departmentId)) {
                 issues.push({ index, field: 'departmentId', kind: 'not-found', message: `Department not found: ${input.departmentId}` });
             }
@@ -293,6 +366,37 @@ export class UserService {
         const created = await this.userRepo.findById(user.id);
         if (!created) throw new Errors.InternalServerError('Created user could not be read back');
         return [created];
+    }
+
+    private throwFirstIssue(issues: RowIssue[]): void {
+        const issue = issues[0];
+        if (!issue) return;
+        if (issue.kind === 'conflict') throw new Errors.Conflict(issue.message);
+        if (issue.kind === 'not-found') throw new Errors.NotFound(issue.message);
+        throw new Errors.BadRequest(issue.message);
+    }
+
+    // Checked before anything else, so a caller without permission cannot learn
+    // from 404/409 responses which users, emails, departments or positions exist.
+    private async assertPermission(headers: Headers, permissions: Permissions): Promise<void> {
+        const result = await this.auth.api.userHasPermission({ headers, body: { permissions } });
+        if (!result.success) {
+            throw new Errors.Forbidden('You do not have permission to perform this action');
+        }
+    }
+
+    // findById leaves out soft-deleted users, so they get 404 too
+    private async getActiveUser(id: string): Promise<User> {
+        const user = await this.userRepo.findById(id);
+        if (!user) throw new Errors.NotFound('User not found');
+        return user;
+    }
+
+    private toServiceError(error: unknown, fallbackMessage: string): Errors.ApiError {
+        if (error instanceof Errors.ApiError) return error;
+        if (isAPIError(error)) return this.toApiError(error);
+        const message = (error as { message?: string } | null)?.message;
+        return new Errors.InternalServerError(message ?? fallbackMessage);
     }
 
     private toApiError(error: { statusCode: number; message: string }): Errors.ApiError {

@@ -1,6 +1,6 @@
 import { Elysia } from 'elysia';
 import type { User } from '../../../packages/domains/entities/user';
-import { createUserRequest, importUsersRequest, listUsersQuery } from '../requests/user';
+import { createUserRequest, importUsersRequest, listUsersQuery, updateUserRequest, updateUserRoleRequest, userIdParams } from '../requests/user';
 import type { OrderDirection, OrderingParams } from '../../../packages/domains/entities/common';
 import { userService } from '../service-di';
 import { requireAuth } from '../middleware/require-auth';
@@ -33,6 +33,15 @@ export const userRoute = new Elysia({
         }
     )
 
+    .get('/:id',
+        async ({ params: { id } }) => {
+            return await userService.getUserById(id);
+        },
+        {
+            params: userIdParams,
+        }
+    )
+
     .post('/',
         async ({ body, request, set }) => {
             const result = await userService.createUser(body, request.headers);
@@ -57,5 +66,36 @@ export const userRoute = new Elysia({
             // Import does not go through Better Auth, so the permission is checked here
             beforeHandle: requirePermission({ user: ['create'] }),
             body: importUsersRequest,
+        }
+    )
+
+    // Permissions for PUT/PATCH/DELETE are checked by Better Auth's admin plugin (admin only, see packages/auth/permissions.ts)
+    .put('/:id',
+        async ({ params: { id }, body, request }) => {
+            return await userService.updateUser(id, body, request.headers);
+        },
+        {
+            params: userIdParams,
+            body: updateUserRequest,
+        }
+    )
+
+    .patch('/:id',
+        async ({ params: { id }, body: { role }, request }) => {
+            return await userService.updateUserRole(id, role, request.headers);
+        },
+        {
+            params: userIdParams,
+            body: updateUserRoleRequest,
+        }
+    )
+
+    .delete('/:id',
+        async ({ params: { id }, request, set }) => {
+            await userService.deleteUser(id, request.headers);
+            set.status = 204;
+        },
+        {
+            params: userIdParams,
         }
     )
