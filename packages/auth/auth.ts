@@ -4,6 +4,7 @@ import { db } from '@db';
 import { config } from '@infra';
 import * as schema from '@db/schema';
 import { admin } from 'better-auth/plugins';
+import { ac, roles } from './permissions';
 
 export const auth = betterAuth({
   baseURL: config.API_BASE_URL,
@@ -42,6 +43,12 @@ export const auth = betterAuth({
     // Accounts are created only by admins (POST /api/v1/user, /user/import)
     disableSignUp: true,
   },
-  // admin() would otherwise default new users to role 'user', which is not a UserRole
-  plugins: [admin({ defaultRole: 'employee' })],
+  plugins: [
+    admin({
+      ac,
+      roles,
+      // Better Auth's default is 'user', which is not a UserRole
+      defaultRole: 'employee',
+    }),
+  ],
 });

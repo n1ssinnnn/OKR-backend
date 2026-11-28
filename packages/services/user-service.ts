@@ -1,5 +1,7 @@
 import type { OrderingParams, PagingParams, PagingResult } from "../domains/entities/common";
 import ExcelJS from "exceljs";
+import { isAPIError } from "better-auth/api";
+import type { auth as Auth } from "../auth/auth";
 import type { CreatedUserResult, CreateUserRequest, ExcelUserRow, ImportRowError, ImportUsersResult } from "../domains/dto/user";
 import { USER_ROLES, type User, type UserRole } from "../domains/entities/user";
 import { Errors } from "../domains/errors";
@@ -8,6 +10,9 @@ import type { OrganizationRepository } from "../repositories/organization-repo";
 import type { UserRepository } from "../repositories/user-repo";
 
 export type PasswordHasher = (password: string) => Promise<string>;
+
+type NewUserWithPassword = CreateUserRequest & { password: string };
+type UserCreator = (inputs: NewUserWithPassword[]) => Promise<User[]>;
 
 const IMPORT_COLUMNS = ['firstName', 'lastName', 'email', 'role', 'department', 'position'] as const;
 const MAX_IMPORT_ROWS = 500;
@@ -22,6 +27,7 @@ export class UserService {
         private readonly userRepo: UserRepository,
         private readonly orgRepo: OrganizationRepository,
         private readonly hashPassword: PasswordHasher,
+        private readonly auth: typeof Auth,
     ) { }
 
     // getAll
@@ -63,8 +69,8 @@ export class UserService {
         }
     }
 
-    // create
-    async createUser(input: CreateUserRequest): Promise<CreatedUserResult> {
+    // create (through Better Auth's admin plugin, which checks that the caller in `headers` may create users and set roles)
+    async createUser(input: CreateUserRequest, headers: Headers): Promise<CreatedUserResult> {
         try {
             const normalized = this.normalize(input);
             const issues = await this.findIssues([normalized]);
@@ -75,12 +81,16 @@ export class UserService {
                 throw new Errors.BadRequest(issue.message);
             }
 
-            const [created] = await this.createWithTemporaryPasswords([normalized]);
+            const [created] = await this.createWithTemporaryPasswords(
+                [normalized],
+                ([withPassword]) => this.createWithAdminPlugin(withPassword!, headers),
+            );
             return created!;
         }
 
         catch (error: unknown) {
             if (error instanceof Errors.ApiError) throw error;
+            if (isAPIError(error)) throw this.toApiError(error);
             const err = error as {
                 statusCode?: number;
                 status?: number;
@@ -139,7 +149,10 @@ export class UserService {
                 throw new Errors.UnprocessableEntity('Excel file contains invalid rows; no users were created', rowErrors);
             }
 
-            const users = await this.createWithTemporaryPasswords(resolved.map((r) => r.input));
+            const users = await this.createWithTemporaryPasswords(
+                resolved.map((r) => r.input),
+                (inputs) => this.createWithCredentials(inputs),
+            );
             return { total: users.length, users };
         }
 
@@ -241,16 +254,56 @@ export class UserService {
         return issues;
     }
 
-    private async createWithTemporaryPasswords(inputs: CreateUserRequest[]): Promise<CreatedUserResult[]> {
+    // Generates a temporary password per user and creates them with `createUsers`,
+    // which must return the users in the same order as its inputs.
+    private async createWithTemporaryPasswords(inputs: CreateUserRequest[], createUsers: UserCreator): Promise<CreatedUserResult[]> {
         const temporaryPasswords = inputs.map(() => generateTemporaryPassword());
-        const passwordHashes = await Promise.all(temporaryPasswords.map((pw) => this.hashPassword(pw)));
-
-        const users = await this.userRepo.createManyWithCredentials(
-            inputs.map((input, i) => ({ ...input, passwordHash: passwordHashes[i]! })),
-        );
-
-        // returning() keeps insert order, so index i matches inputs[i]
+        const users = await createUsers(inputs.map((input, i) => ({ ...input, password: temporaryPasswords[i]! })));
         return users.map((user, i) => ({ user, temporaryPassword: temporaryPasswords[i]! }));
+    }
+
+    // Used by import: all users are inserted in one transaction.
+    private async createWithCredentials(inputs: NewUserWithPassword[]): Promise<User[]> {
+        const passwordHashes = await Promise.all(inputs.map((input) => this.hashPassword(input.password)));
+        // returning() keeps insert order, so index i matches inputs[i]
+        return this.userRepo.createManyWithCredentials(
+            inputs.map(({ password: _password, ...input }, i) => ({ ...input, passwordHash: passwordHashes[i]! })),
+        );
+    }
+
+    // Used by createUser: Better Auth creates the user and its credential account.
+    private async createWithAdminPlugin(input: NewUserWithPassword, headers: Headers): Promise<User[]> {
+        const { user } = await this.auth.api.createUser({
+            headers,
+            body: {
+                email: input.email,
+                password: input.password,
+                name: `${input.firstName} ${input.lastName}`,
+                role: input.role,
+                data: {
+                    firstName: input.firstName,
+                    lastName: input.lastName,
+                    departmentId: input.departmentId,
+                    positionId: input.positionId,
+                },
+            },
+        });
+
+        // Read back through the repository so the result has the same shape as other endpoints
+        const created = await this.userRepo.findById(user.id);
+        if (!created) throw new Errors.InternalServerError('Created user could not be read back');
+        return [created];
+    }
+
+    private toApiError(error: { statusCode: number; message: string }): Errors.ApiError {
+        switch (error.statusCode) {
+            case 400: return new Errors.BadRequest(error.message);
+            case 401: return new Errors.Unauthorized(error.message);
+            case 403: return new Errors.Forbidden(error.message);
+            case 404: return new Errors.NotFound(error.message);
+            case 409: return new Errors.Conflict(error.message);
+            default: return new Errors.InternalServerError(error.message);
+        }
     }
 
     // Reads the first worksheet. Row 1 is the header; columns are matched by name,
